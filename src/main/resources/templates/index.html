@@ -1,0 +1,14 @@
+<!-- templates/index.html -->
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>서버 실행 성공!</title>
+</head>
+<body>
+<h1>서버 실행 성공!</h1>
+<p th:text="'안녕하세요, ' + ${name} + '님!'"></p>
+<a href="/oauth2/authorization/microsoft">로그인</a> |
+<a href="/logout">로그아웃</a>
+</body>
+</html>
