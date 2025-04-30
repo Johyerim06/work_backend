@@ -13,6 +13,11 @@ import java.util.List;
 @Configuration
 public class SecurityConfig {
 
+    // ✨ 허용할 Origin을 변수로 관리
+    private static final List<String> allowedOrigins = List.of(
+            "http://localhost:5173" // 기본 Vite 포트
+    );
+
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
@@ -20,13 +25,14 @@ public class SecurityConfig {
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/api/schools", "/api/schools/**").permitAll() // ✨ schools 검색 무조건 허용
+                        .requestMatchers("/api/contract", "/api/contract/**").permitAll()
                         .requestMatchers("/", "/login/**", "/oauth2/**").permitAll()
                         .anyRequest().authenticated()
                 )
                 .oauth2Login(oauth -> oauth
-                        .defaultSuccessUrl("http://localhost:5173", true)
+                        .defaultSuccessUrl("/", true)
                 )
-                .logout(logout -> logout.logoutSuccessUrl("http://localhost:5173"));
+                .logout(logout -> logout.logoutSuccessUrl("/"));
 
         return http.build();
     }
@@ -34,14 +40,14 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOrigins(List.of("http://localhost:5173"));
+        configuration.setAllowedOrigins(allowedOrigins);
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(List.of("*"));
         configuration.setExposedHeaders(List.of("Authorization", "Content-Disposition"));
         configuration.setAllowCredentials(true);
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
-        source.registerCorsConfiguration("/api/**", configuration);
+        source.registerCorsConfiguration("/**", configuration);
         return source;
     }
 }
