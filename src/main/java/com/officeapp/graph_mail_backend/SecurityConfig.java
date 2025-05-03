@@ -30,11 +30,13 @@ public class SecurityConfig {
                                 "/api/contract/**",
                                 "/api/files/**",
                                 "/api/templates/**",
-                                "/user-insert",
+                                "/api/note-templates/**",
+                                "/user-insert/**",
                                 "/upload/**",
                                 "/",
                                 "/login/**",
                                 "/oauth2/**",
+                                "/api/tax-invoice/**",
                                 "/error" // 인증 실패 시 자동 리디렉션되는 경로
                         ).permitAll()
                         // 나머지는 인증 필요
