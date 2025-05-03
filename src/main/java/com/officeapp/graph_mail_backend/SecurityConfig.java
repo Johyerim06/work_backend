@@ -13,42 +13,55 @@ import java.util.List;
 @Configuration
 public class SecurityConfig {
 
-    // ✨ 허용할 Origin을 변수로 관리
+    // 허용할 Origin
     private static final List<String> allowedOrigins = List.of(
-            "http://localhost:5173" // 기본 Vite 포트
+            "http://localhost:5173" // Vite 기본 포트
     );
 
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
-                .csrf(csrf -> csrf.disable())
-                .cors(cors -> cors.configurationSource(corsConfigurationSource()))
+                .csrf(csrf -> csrf.disable()) // CSRF 비활성화 (REST API용)
+                .cors(cors -> cors.configurationSource(corsConfigurationSource())) // CORS 설정 적용
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/api/schools", "/api/schools/**").permitAll() // ✨ schools 검색 무조건 허용
-                        .requestMatchers("/api/contract", "/api/contract/**").permitAll()
-                        .requestMatchers("/", "/login/**", "/oauth2/**").permitAll()
+                        // 인증 없이 접근 가능한 경로
+                        .requestMatchers(
+                                "/api/schools/**",
+                                "/api/contract/**",
+                                "/api/files/**",
+                                "/api/templates/**",
+                                "/user-insert",
+                                "/upload/**",
+                                "/",
+                                "/login/**",
+                                "/oauth2/**",
+                                "/error" // 인증 실패 시 자동 리디렉션되는 경로
+                        ).permitAll()
+                        // 나머지는 인증 필요
                         .anyRequest().authenticated()
                 )
                 .oauth2Login(oauth -> oauth
-                        .defaultSuccessUrl("/", true)
+                        .defaultSuccessUrl("/", true) // 로그인 성공 시 이동할 경로
                 )
-                .logout(logout -> logout.logoutSuccessUrl("/"));
+                .logout(logout -> logout
+                        .logoutSuccessUrl("/") // 로그아웃 성공 시 이동할 경로
+                );
 
         return http.build();
     }
 
+    // CORS 설정
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
-        CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOrigins(allowedOrigins);
-        configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
-        configuration.setAllowedHeaders(List.of("*"));
-        configuration.setExposedHeaders(List.of("Authorization", "Content-Disposition"));
-        configuration.setAllowCredentials(true);
+        CorsConfiguration config = new CorsConfiguration();
+        config.setAllowedOrigins(allowedOrigins); // 허용 Origin
+        config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH")); // 허용 메서드
+        config.setAllowedHeaders(List.of("*")); // 모든 헤더 허용
+        config.setExposedHeaders(List.of("Authorization", "Content-Disposition")); // 응답 헤더 노출
+        config.setAllowCredentials(true); // 쿠키 허용 (프론트와 세션 공유할 때 필요)
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
-        source.registerCorsConfiguration("/**", configuration);
+        source.registerCorsConfiguration("/**", config);
         return source;
     }
 }
-
