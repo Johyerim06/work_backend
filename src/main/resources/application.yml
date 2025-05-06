@@ -5,6 +5,11 @@ spring:
   application:
     name: graph-mail-backend
 
+  data:
+    mongodb:
+      uri: mongodb+srv://johyerim01:uLjEL2Orw3VaLL3I@cluster0.1lfd3.mongodb.net/mydatabase?retryWrites=true&w=majority&appName=Cluster0
+      database: mydatabase
+
   security:
     oauth2:
       client:
