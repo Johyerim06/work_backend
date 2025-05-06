@@ -24,23 +24,18 @@ public class ContractController {
         Workbook workbook = new XSSFWorkbook(templateStream);
         Sheet sheet = workbook.getSheetAt(0);
 
-        // 날짜 포맷
         String todayForCell = LocalDate.now().format(DateTimeFormatter.ofPattern("yyyy.MM.dd"));
         String todayForFile = LocalDate.now().format(DateTimeFormatter.ofPattern("yyyyMMdd"));
         String quoteDate = (request.getQuoteDate() != null && !request.getQuoteDate().isEmpty())
                 ? request.getQuoteDate()
                 : todayForCell;
 
-        // 수신인
         String region = request.getRegion();
         String city = request.getCity();
         String schoolName = request.getSchoolName();
-        String receiver = schoolName != null && schoolName.startsWith(region) ? schoolName : city + " " + schoolName;
-
-        // 참조인
+        String receiver = schoolName != null && schoolName.startsWith(city) ? schoolName : city + " " + schoolName;
         String teacher = request.getTeacher() + " 선생님";
 
-        // 사용기간 포맷
         String period;
         try {
             if (request.getStartDate() != null && request.getEndDate() != null &&
@@ -57,17 +52,15 @@ public class ContractController {
                 period = request.getMonths() + "개월";
             }
         } catch (Exception e) {
-            period = request.getMonths() + "개월"; // fallback
+            period = request.getMonths() + "개월";
         }
 
-        // 금액 처리
-        int amount = request.getAmount(); // 0이면 그대로 허용
+        int amount = request.getAmount();
         int people = request.getPeopleCount();
         int totalAmount = request.getTotalAmount();
         int supplyAmount = (int)Math.floor(totalAmount / 1.1);
         int vat = totalAmount - supplyAmount;
 
-        // 셀에 입력
         sheet.getRow(9).getCell(4).setCellValue(quoteDate);               // E10
         sheet.getRow(11).getCell(4).setCellValue(receiver);               // E12
         sheet.getRow(14).getCell(4).setCellValue(teacher);                // E15
@@ -75,7 +68,7 @@ public class ContractController {
         sheet.getRow(26).getCell(5).setCellValue(people);                 // F27
         sheet.getRow(26).getCell(7).setCellValue(amount);                 // H27
         sheet.getRow(26).getCell(11).setCellValue(totalAmount);          // L27
-        sheet.getRow(27).getCell(3).setCellValue(request.getNote());     // D28 (줄바꿈 포함)
+        sheet.getRow(27).getCell(3).setCellValue(request.getNote());     // D28
 
         sheet.getRow(26).getCell(13).setCellValue(supplyAmount);         // N27
         sheet.getRow(26).getCell(15).setCellValue(vat);                  // P27
@@ -83,7 +76,6 @@ public class ContractController {
         sheet.getRow(27).getCell(13).setCellValue(supplyAmount);         // N28
         sheet.getRow(27).getCell(15).setCellValue(vat);                  // P28
 
-        // 지역별 저장 경로 설정
         Map<String, String> folderMap = Map.ofEntries(
                 Map.entry("충북", "06. 충북"), Map.entry("경북", "15. 경북"),
                 Map.entry("대구", "11. 대구"), Map.entry("전남", "09. 전남"),
@@ -96,33 +88,37 @@ public class ContractController {
         );
 
         String folderName = folderMap.getOrDefault(region, "기타");
-        String basePath = "C:/Users/koro2/마타에듀 주식회사/MATA EDU - 문서/X. 운영위원회/X.03. 수발신문서/X.03.02. 공문외_발신서류/X.03.02.12. 발신견적서/2025/마타수학/" + folderName;
-        new File(basePath).mkdirs();
+        String fileName = todayForFile + "_견적서_" + schoolName;
 
-        String excelPath = basePath + "/" + todayForFile + "_견적서_" + schoolName + ".xlsx";
-
-        try (FileOutputStream out = new FileOutputStream(excelPath)) {
-            workbook.write(out);
-        }
-        workbook.close();
-
-        // PDF 변환
-        String pdfPath = excelPath.replace(".xlsx", ".pdf");
+        String[] basePaths = {
+                "C:/Users/koro2/마타에듀 주식회사/MATA EDU - 문서/X. 운영위원회/X.03. 수발신문서/X.03.02. 공문외_발신서류/X.03.02.12. 발신견적서/2025/마타수학/" + folderName,
+                "C:/Users/koro2/Downloads",
+                "C:/Users/koro2/OneDrive/다운로드/마타에듀견적서"
+        };
 
         LocalOfficeManager officeManager = LocalOfficeManager.install();
-        try {
-            officeManager.start();
+        officeManager.start();
+
+        for (String path : basePaths) {
+            File dir = new File(path);
+            dir.mkdirs();
+
+            String excelPath = path + "/" + fileName + ".xlsx";
+            String pdfPath = path + "/" + fileName + ".pdf";
+
+            try (FileOutputStream out = new FileOutputStream(excelPath)) {
+                workbook.write(out);
+            }
 
             JodConverter
                     .convert(new File(excelPath))
                     .to(new File(pdfPath))
                     .execute();
-
-        } finally {
-            officeManager.stop();
         }
 
-        return ResponseEntity.ok("엑셀과 PDF 저장 완료:\n" + excelPath + "\n" + pdfPath);
-    }
+        workbook.close();
+        officeManager.stop();
 
+        return ResponseEntity.ok("엑셀과 PDF 저장 완료!");
+    }
 }
